@@ -1,0 +1,188 @@
+{% set active_page = 'dashboard' %}
+{% extends 'base_console.html' %}
+{% block title %}安全总览 - LabSafe{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <div class="page-kicker">安全总览</div>
+        <h1 class="page-title">实验室安全总览</h1>
+        <p class="page-description">只保留现场判断所需的核心状态。更多操作进入对应模块处理。</p>
+    </div>
+    <div class="control-row">
+        <button class="btn" id="refreshDashboard">刷新</button>
+        <button class="btn btn-danger" id="testAlert">应急警报</button>
+    </div>
+</header>
+
+<div class="grid dashboard-layout">
+    <section class="risk-hero" id="riskHero">
+        <div>
+            <p class="risk-title">当前实验室风险</p>
+            <div class="risk-value" id="riskValue">正常</div>
+            <p class="risk-reason" id="riskReason">正在读取实验室实时状态...</p>
+        </div>
+        <div class="control-row">
+            <span id="serviceChip" class="status-chip">服务 --</span>
+            <span id="agentChip" class="status-chip">助手 --</span>
+            <span id="emergencyChip" class="status-chip">应急 --</span>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">快速判断</h2>
+                <p class="panel-subtitle">高风险状态不会由前端自行判定</p>
+            </div>
+            <div class="js-risk-badge"></div>
+        </div>
+        <div class="grid grid-2">
+            <div class="metric-card">
+                <div class="metric-label">温度</div>
+                <div class="metric-value" id="temperature">--</div>
+                <div class="metric-note">阈值以后端配置为准</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">湿度</div>
+                <div class="metric-value" id="humidity">--</div>
+                <div class="metric-note">DHT11 实时状态</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">火警状态</div>
+                <div class="metric-value" id="fireStatus">--</div>
+                <div class="metric-note" id="fireReason">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">摄像头帧</div>
+                <div class="metric-value mono" id="frameVersion">--</div>
+                <div class="metric-note" id="cameraLatency">延迟 --</div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div class="grid grid-2" style="margin-top:16px;">
+    <section class="camera-panel">
+        <div class="camera-header">
+            <div>
+                <strong>USB 摄像头</strong>
+                <div class="muted mono">/api/camera/usb-camera/stream</div>
+            </div>
+            <label class="status-chip"><input id="toggleCam1" type="checkbox" checked> 启用</label>
+        </div>
+        <div class="camera-frame" id="frameCam1">
+            <img id="cam1" src="/api/camera/usb-camera/stream" alt="USB 摄像头">
+            <div class="detection-overlay" id="overlayCam1"></div>
+        </div>
+    </section>
+    <section class="camera-panel">
+        <div class="camera-header">
+            <div>
+                <strong>USB 摄像头 2</strong>
+                <div class="muted mono">/api/camera/usb-camera-2/stream</div>
+            </div>
+            <label class="status-chip"><input id="toggleCam2" type="checkbox" checked> 启用</label>
+        </div>
+        <div class="camera-frame" id="frameCam2">
+            <img id="cam2" src="/api/camera/usb-camera-2/stream" alt="USB 摄像头 2">
+            <div class="detection-overlay" id="overlayCam2"></div>
+        </div>
+    </section>
+</div>
+
+<div class="grid" style="margin-top:16px;">
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">最近事件</h2>
+                <p class="panel-subtitle">消息中心与报警摘要</p>
+            </div>
+            <a class="btn btn-ghost" href="/logs">查看日志</a>
+        </div>
+        <div class="log-console" id="recentEvents">
+            <div class="loading-state">正在读取最近事件...</div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const riskValue = document.getElementById("riskValue");
+    const riskHero = document.getElementById("riskHero");
+
+    async function updateDashboard() {
+        try {
+            const [status, detections, agent, emergency, messages] = await Promise.allSettled([
+                LabSafe.api("/api/status"),
+                LabSafe.api("/api/camera/usb-camera/detections"),
+                LabSafe.api("/api/agent/status"),
+                LabSafe.api("/api/emergency-call/status"),
+                LabSafe.api("/api/messages")
+            ]);
+            const s = status.status === "fulfilled" ? status.value : {};
+            const d = detections.status === "fulfilled" ? detections.value : {};
+            const a = agent.status === "fulfilled" ? agent.value : {};
+            const e = emergency.status === "fulfilled" ? emergency.value : {};
+            const m = messages.status === "fulfilled" ? (messages.value.messages || messages.value || []) : [];
+            const risk = (a.risk_level || s.alert_level || "normal").toLowerCase();
+            riskHero.className = `risk-hero ${risk}`;
+            riskValue.textContent = LabSafe.riskMeta[risk]?.label || risk;
+            document.getElementById("riskReason").textContent = a.reason || s.fire_state?.alarm_reason || "当前未发现高风险异常。";
+            document.getElementById("temperature").textContent = LabSafe.formatNumber(s.fire_state?.temperature, 1, "°C");
+            document.getElementById("humidity").textContent = LabSafe.formatNumber(s.fire_state?.humidity, 1, "%");
+            document.getElementById("fireStatus").textContent = s.fire_state?.alarm_active ? "触发" : "正常";
+            document.getElementById("fireReason").textContent = s.fire_state?.alarm_reason || s.fire_state?.sensor_error || "火警未触发";
+            document.getElementById("frameVersion").textContent = d.frame_version ?? "--";
+            document.getElementById("cameraLatency").textContent = `延迟 ${LabSafe.formatNumber(d.latency_ms, 1, "ms")}`;
+            document.getElementById("serviceChip").className = `status-chip status-${s.status === "running" ? "normal" : "warning"}`;
+            document.getElementById("serviceChip").textContent = s.status === "running" ? "服务运行中" : "服务待确认";
+            document.getElementById("agentChip").className = `status-chip status-${a.enabled === false ? "warning" : "normal"}`;
+            document.getElementById("agentChip").textContent = `助手${LabSafe.formatAgentState(a)}`;
+            document.getElementById("emergencyChip").className = `status-chip status-${e.ready ? "normal" : "warning"}`;
+            document.getElementById("emergencyChip").textContent = e.ready ? "应急电话就绪" : "应急电话待确认";
+            LabSafe.drawDetections(document.getElementById("cam1"), document.getElementById("overlayCam1"), d);
+            LabSafe.drawDetections(document.getElementById("cam2"), document.getElementById("overlayCam2"), d);
+            const events = Array.isArray(m) ? m.slice(-8).reverse() : [];
+            document.getElementById("recentEvents").innerHTML = events.length
+                ? events.map((item) => LabSafe.renderLogLine(item)).join("")
+                : '<div class="empty-state">暂无消息事件</div>';
+        } catch (error) {
+            LabSafe.toast(error.message || "Dashboard 更新失败", "error");
+        }
+    }
+
+    async function toggleCamera(camId, imgId, enabled) {
+        try {
+            await LabSafe.post(`/api/camera/${camId}/toggle`, {});
+            const img = document.getElementById(imgId);
+            img.style.opacity = enabled ? "1" : "0.3";
+            if (enabled) img.src = `/api/camera/${camId}/stream?t=${Date.now()}`;
+        } catch (error) {
+            LabSafe.toast("摄像头切换失败", "error");
+        }
+    }
+
+    document.getElementById("refreshDashboard").addEventListener("click", updateDashboard);
+    document.getElementById("toggleCam1").addEventListener("change", (e) => toggleCamera("usb-camera", "cam1", e.target.checked));
+    document.getElementById("toggleCam2").addEventListener("change", (e) => toggleCamera("usb-camera-2", "cam2", e.target.checked));
+    document.getElementById("testAlert").addEventListener("click", () => {
+        LabSafe.openModal({
+            title: "确认应急警报",
+            danger: true,
+            body: "这会调用后端紧急报警接口，用于演练或真实报警。请确认现场允许执行。",
+            confirmText: "提交警报",
+            onConfirm: async () => {
+                await LabSafe.post("/api/alert/emergency", {});
+                LabSafe.toast("报警请求已提交");
+            }
+        });
+    });
+    updateDashboard();
+    window.setInterval(updateDashboard, 3000);
+    window.addEventListener("resize", updateDashboard);
+})();
+</script>
+{% endblock %}

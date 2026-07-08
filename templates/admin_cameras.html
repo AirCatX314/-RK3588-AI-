@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频监控 - 管理员后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
+    <style>
+.text-muted { color: #aaa !important; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .navbar { background: rgba(0,0,0,0.4) !important; }
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+        }
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: rgba(0,0,0,0.2);
+        }
+        .sidebar a {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            display: block;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 4px 8px;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.15);
+        }
+        .camera-frame {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            position: relative;
+        }
+        .camera-frame img { width: 100%; height: 100%; object-fit: contain; }
+        .detection-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .det-box {
+            position: absolute;
+            border: 2px solid #ffc107;
+            box-sizing: border-box;
+        }
+        .det-label {
+            position: absolute;
+            left: -2px;
+            top: -24px;
+            background: #ffc107;
+            color: #111;
+            padding: 1px 5px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .fire-alarm-banner {
+            display: none;
+            position: fixed;
+            top: 64px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            padding: 12px 22px;
+            background: rgba(220, 38, 38, 0.96);
+            color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 34px rgba(255, 0, 0, 0.65);
+            font-weight: 800;
+        }
+        body.fire-alarm::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 20%, rgba(255, 0, 0, 0.28), rgba(80, 0, 0, 0.16) 45%, rgba(255, 0, 0, 0.08));
+            animation: fireGlow 0.8s infinite alternate;
+        }
+        body.fire-alarm .fire-alarm-banner { display: block; }
+        body.fire-alarm .card,
+        body.fire-alarm .camera-frame {
+            border-color: rgba(255, 60, 60, 0.85);
+            box-shadow: 0 0 24px rgba(255, 0, 0, 0.45);
+        }
+        @keyframes fireGlow {
+            from { opacity: 0.45; }
+            to { opacity: 0.9; }
+        }
+    </style>
+    <link rel="stylesheet" href="/static/css/labsafe-admin.css">
+</head>
+<body style="color: #fff;">
+    <div id="fireAlarmBanner" class="fire-alarm-banner">火灾/烟雾视觉告警</div>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/admin">
+                <i class="bi bi-shield-check"></i> 视频监控 - 管理员后台
+            </a>
+            <a href="/admin" class="btn btn-outline-light btn-sm">返回后台</a>
+        </div>
+    </nav>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar py-3">
+                <a href="/admin"><i class="bi bi-speedometer2 me-2"></i>总览</a>
+                <a href="/admin/cameras" class="active"><i class="bi bi-camera-video me-2"></i>视频监控</a>
+                <a href="/admin/messages"><i class="bi bi-chat-dots me-2"></i>消息管理</a>
+                <a href="/admin/send"><i class="bi bi-send me-2"></i>发送通知</a>
+            </nav>
+            
+            <main class="col-md-10 ms-sm-auto px-4 py-4">
+                <h2 class="mb-4"><i class="bi bi-camera-video me-2"></i>视频监控</h2>
+                
+                <div class="row">
+                    {% for cam_id, cam in cameras.items() %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between">
+                                <h5 class="mb-0">{{ cam.name }}</h5>
+                                <span class="badge bg-{{ 'success' if cam.enabled else 'secondary' }}">
+                                    {{ '在线' if cam.enabled else '离线' }}
+                                </span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="camera-frame">
+                                    <img id="img-{{ cam_id }}" src="/api/camera/{{ cam_id }}/stream" 
+                                         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22><rect fill=%22%23333%22 width=%22100%25%22 height=%22100%25%22/><text fill=%22%23666%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22>离线</text></svg>'">
+                                    <div class="detection-overlay" id="overlay-{{ cam_id }}"></div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <small class="text-muted">地址: {{ cam.url }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        const camIds = {{ cameras.keys() | list | tojson }};
+        let adminFireAudioCtx = null;
+        let adminLastFireToneAt = 0;
+
+        function adminPlayFireTone() {
+            const now = Date.now();
+            if (now - adminLastFireToneAt < 420) return;
+            adminLastFireToneAt = now;
+            try {
+                adminFireAudioCtx = adminFireAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                const osc = adminFireAudioCtx.createOscillator();
+                const gain = adminFireAudioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.value = 1500;
+                gain.gain.setValueAtTime(0.0001, adminFireAudioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.42, adminFireAudioCtx.currentTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, adminFireAudioCtx.currentTime + 0.36);
+                osc.connect(gain);
+                gain.connect(adminFireAudioCtx.destination);
+                osc.start();
+                osc.stop(adminFireAudioCtx.currentTime + 0.38);
+            } catch (e) {}
+        }
+
+        document.addEventListener('pointerdown', () => {
+            if (adminFireAudioCtx && adminFireAudioCtx.state === 'suspended') adminFireAudioCtx.resume();
+        }, {passive: true});
+
+        function adminSetFireAlarm(active, reason) {
+            document.body.classList.toggle('fire-alarm', !!active);
+            const banner = document.getElementById('fireAlarmBanner');
+            if (banner) banner.textContent = active ? ('火灾/烟雾视觉告警 - ' + (reason || '请立即确认现场')) : '火灾/烟雾视觉告警';
+            if (active) adminPlayFireTone();
+        }
+
+        function renderDetections(camId, data) {
+            const img = document.getElementById('img-' + camId);
+            const overlay = document.getElementById('overlay-' + camId);
+            if (!img || !overlay || !data || !data.image_width || !data.image_height) return;
+            const parent = img.parentElement.getBoundingClientRect();
+            const scale = Math.min(parent.width / data.image_width, parent.height / data.image_height);
+            const drawW = data.image_width * scale;
+            const drawH = data.image_height * scale;
+            const offX = (parent.width - drawW) / 2;
+            const offY = (parent.height - drawH) / 2;
+            overlay.innerHTML = '';
+            (data.detections || []).forEach(det => {
+                const b = det.bbox || [];
+                if (b.length !== 4) return;
+                const box = document.createElement('div');
+                box.className = 'det-box';
+                box.style.left = (offX + b[0] * scale) + 'px';
+                box.style.top = (offY + b[1] * scale) + 'px';
+                box.style.width = Math.max(1, (b[2] - b[0]) * scale) + 'px';
+                box.style.height = Math.max(1, (b[3] - b[1]) * scale) + 'px';
+                const label = document.createElement('div');
+                label.className = 'det-label';
+                label.textContent = `${det.class_name} ${(det.score || 0).toFixed(2)}`;
+                box.appendChild(label);
+                overlay.appendChild(box);
+            });
+        }
+
+        async function updateDetectionOverlay() {
+            try {
+                const resp = await fetch('/api/camera/usb-camera/detections', {cache: 'no-store'});
+                const data = await resp.json();
+                camIds.forEach(camId => renderDetections(camId, data));
+                const active = !!data.fire_alarm;
+                adminSetFireAlarm(active, data.alarm_reason || '');
+            } catch(e) {}
+        }
+
+        setInterval(updateDetectionOverlay, 120);
+        window.addEventListener('resize', updateDetectionOverlay);
+        updateDetectionOverlay();
+    </script>
+    {% include 'agent_widget.html' %}
+</body>
+</html>

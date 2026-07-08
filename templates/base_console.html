@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LabSafe 安全控制台{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/labsafe-console.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-title"><span class="brand-mark">LS</span>LabSafe</div>
+                <p class="brand-subtitle">实验室安全控制台</p>
+            </div>
+            <div>
+                <div class="nav-section-label">工作区</div>
+                <nav class="nav-list" aria-label="主导航">
+                    <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/"><span class="nav-dot"></span>安全总览</a>
+                    <a class="nav-link {% if active_page == 'monitor' %}active{% endif %}" href="/monitor"><span class="nav-dot"></span>视频监控</a>
+                    <a class="nav-link {% if active_page == 'agent' %}active{% endif %}" href="/agent"><span class="nav-dot"></span>智能助手</a>
+                    <a class="nav-link {% if active_page == 'logs' %}active{% endif %}" href="/logs"><span class="nav-dot"></span>日志记录</a>
+                    <a class="nav-link {% if active_page == 'settings' %}active{% endif %}" href="/settings"><span class="nav-dot"></span>系统设置</a>
+                    <a class="nav-link nav-link-admin" href="/admin"><span class="nav-dot"></span>管理后台</a>
+                </nav>
+            </div>
+            <div class="sidebar-footer">
+                <div class="muted">开发板服务</div>
+                <div class="mono">Web :5000 / WS :8765</div>
+            </div>
+        </aside>
+
+        <main class="main-shell">
+            <header class="top-status-bar">
+                <div class="top-title">LabSafe 安全控制台</div>
+                <div class="js-risk-badge"></div>
+                <div class="top-status-line" id="topStatusText">服务 -- · 摄像头 -- · 助手 -- · 应急 --</div>
+                <div class="top-time" id="topTime">--:--:--</div>
+            </header>
+
+            <div class="workspace-shell">
+                <section class="workspace-main">
+                    <div class="danger-alert" id="dangerAlert"></div>
+                    {% block content %}{% endblock %}
+                </section>
+                <aside class="right-inspector">
+                    {% block inspector %}{% endblock %}
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-backdrop" id="globalModal">
+        <div class="modal-panel">
+            <h2 class="modal-title">确认操作</h2>
+            <div class="modal-body"></div>
+            <div class="control-row" style="justify-content:flex-end;margin-top:18px;">
+                <button class="btn btn-ghost modal-cancel">取消</button>
+                <button class="btn btn-primary modal-confirm">确认</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast-root" id="toastRoot"></div>
+    {% include 'agent_widget.html' %}
+    <script src="/static/js/labsafe-core.js"></script>
+    <script src="/static/js/labsafe-agent.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

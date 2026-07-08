@@ -1,0 +1,175 @@
+{% set active_page = 'settings' %}
+{% extends 'base_console.html' %}
+{% block title %}系统设置 - LabSafe{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <div class="page-kicker">系统设置</div>
+        <h1 class="page-title">系统设置</h1>
+        <p class="page-description">分类管理摄像头、火灾检测、通知、AI/Agent 与应急配置。敏感字段不明文回填。</p>
+    </div>
+    <button class="btn btn-primary" id="saveSettings">保存设置</button>
+</header>
+
+<div class="settings-layout">
+    <nav class="settings-nav">
+        <a class="nav-link active" href="#camera"><span class="nav-dot"></span>摄像头</a>
+        <a class="nav-link" href="#fire"><span class="nav-dot"></span>火灾检测</a>
+        <a class="nav-link" href="#ai"><span class="nav-dot"></span>AI / Agent</a>
+        <a class="nav-link" href="#notify"><span class="nav-dot"></span>通知</a>
+        <a class="nav-link" href="#emergency"><span class="nav-dot"></span>应急电话</a>
+    </nav>
+    <div>
+        <section id="camera" class="setting-section">
+            <div class="panel-header">
+                <div><h2 class="panel-title">摄像头设置</h2><p class="panel-subtitle">保留现有摄像头 ID 与后端配置结构</p></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-row"><label>usb-camera URL</label><input class="field" id="cam1_url"></div>
+                <div class="form-row"><label>usb-camera 状态</label><label class="status-chip"><input type="checkbox" id="cam1_enabled"> 启用</label></div>
+                <div class="form-row"><label>usb-camera-2 URL</label><input class="field" id="cam2_url"></div>
+                <div class="form-row"><label>usb-camera-2 状态</label><label class="status-chip"><input type="checkbox" id="cam2_enabled"> 启用</label></div>
+            </div>
+        </section>
+
+        <section id="fire" class="setting-section">
+            <div class="panel-header">
+                <div><h2 class="panel-title">火灾检测设置</h2><p class="panel-subtitle">实际阈值以后端返回为准，默认 40°C</p></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-row"><label>温度阈值 °C</label><input class="field" type="number" id="temp_threshold" value="40"></div>
+                <div class="form-row"><label>检测灵敏度</label><select class="select" id="sensitivity"><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></div>
+                <div class="form-row"><label>检测间隔 秒</label><input class="field" type="number" id="detect_interval" value="2"></div>
+            </div>
+        </section>
+
+        <section id="ai" class="setting-section">
+            <div class="panel-header">
+                <div><h2 class="panel-title">AI / Agent 设置</h2><p class="panel-subtitle">密钥不回填；留空表示保留原值</p></div>
+                <span class="status-chip" id="apiKeyStatus">密钥 --</span>
+            </div>
+            <div class="form-grid">
+                <div class="form-row"><label>AI 模型</label><select class="select" id="ai_model"><option value="MiniMax">MiniMax</option><option value="DeepSeek">DeepSeek</option><option value="Local">Local</option></select></div>
+                <div class="form-row"><label>新 API Key</label><input class="field" type="password" id="api_key" placeholder="留空则保留原 key"></div>
+                <div class="form-row"><label>报告时间</label><input class="field" type="time" id="analysis_time" value="09:00"></div>
+                <div class="form-row"><label>自动分析</label><label class="status-chip"><input type="checkbox" id="auto_analysis"> 启用</label></div>
+            </div>
+        </section>
+
+        <section id="notify" class="setting-section">
+            <div class="panel-header">
+                <div><h2 class="panel-title">通知设置</h2><p class="panel-subtitle">邮箱密码不回填；留空表示保留原值</p></div>
+                <span class="status-chip" id="emailStatus">邮箱 --</span>
+            </div>
+            <div class="form-grid">
+                <div class="form-row"><label>声音报警</label><label class="status-chip"><input type="checkbox" id="sound_alert"> 启用</label></div>
+                <div class="form-row"><label>邮箱通知</label><label class="status-chip"><input type="checkbox" id="email_alert"> 启用</label></div>
+                <div class="form-row"><label>发件邮箱</label><input class="field" type="email" id="email_sender" placeholder="your@example.com"></div>
+                <div class="form-row"><label>邮箱密码</label><input class="field" type="password" id="email_password" placeholder="留空则保留原密码"></div>
+                <div class="form-row"><label>接收邮箱</label><input class="field" type="email" id="email" placeholder="receiver@example.com"></div>
+            </div>
+        </section>
+
+        <section id="emergency" class="setting-section">
+            <div class="panel-header">
+                <div><h2 class="panel-title">应急电话</h2><p class="panel-subtitle">前端不向拨号接口传号码，只显示配置状态</p></div>
+                <span class="status-chip" id="emergencyStatus">电话 --</span>
+            </div>
+            <div id="emergencyConfig" class="secondary">正在读取应急电话状态...</div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    let current = {};
+    function configured(value) {
+        return !!(value && String(value).trim());
+    }
+    async function loadSettings() {
+        try {
+            const [settings, emergency] = await Promise.allSettled([
+                LabSafe.api("/api/settings"),
+                LabSafe.api("/api/emergency-call/status")
+            ]);
+            current = settings.status === "fulfilled" ? settings.value : {};
+            const cams = current.cameras || {};
+            document.getElementById("cam1_url").value = cams["usb-camera"]?.url || cams["living-room"]?.url || "";
+            document.getElementById("cam1_enabled").checked = cams["usb-camera"]?.enabled !== false;
+            document.getElementById("cam2_url").value = cams["usb-camera-2"]?.url || cams["front-door"]?.url || "";
+            document.getElementById("cam2_enabled").checked = cams["usb-camera-2"]?.enabled !== false;
+            document.getElementById("temp_threshold").value = current.fire?.temp_threshold ?? 40;
+            document.getElementById("sensitivity").value = current.fire?.sensitivity || "medium";
+            document.getElementById("detect_interval").value = current.fire?.interval || 2;
+            document.getElementById("ai_model").value = current.ai?.model || "MiniMax";
+            document.getElementById("analysis_time").value = current.ai?.send_time || "09:00";
+            document.getElementById("auto_analysis").checked = !!current.ai?.auto_analysis;
+            document.getElementById("sound_alert").checked = current.notifications?.sound !== false;
+            document.getElementById("email_alert").checked = !!current.notifications?.email;
+            document.getElementById("email").value = current.notifications?.email_addr || "";
+            document.getElementById("email_sender").value = current.notifications?.email_sender || "";
+            document.getElementById("apiKeyStatus").className = `status-chip status-${configured(current.ai?.api_key) ? "normal" : "warning"}`;
+            document.getElementById("apiKeyStatus").textContent = configured(current.ai?.api_key) ? "密钥已配置" : "密钥未配置";
+            document.getElementById("emailStatus").className = `status-chip status-${configured(current.notifications?.email_password) ? "normal" : "notice"}`;
+            document.getElementById("emailStatus").textContent = configured(current.notifications?.email_password) ? "邮箱已配置" : "邮箱密码未配置";
+            const e = emergency.status === "fulfilled" ? emergency.value : {};
+            document.getElementById("emergencyStatus").className = `status-chip status-${e.ready ? "normal" : "warning"}`;
+            document.getElementById("emergencyStatus").textContent = e.ready ? "应急电话就绪" : "应急电话待确认";
+            document.getElementById("emergencyConfig").textContent = e.message || "后端未返回应急电话状态。";
+            LabSafe.renderKeyValue("settingsInspector", [
+                ["api_key", configured(current.ai?.api_key) ? "configured" : "missing", false],
+                ["email_password", configured(current.notifications?.email_password) ? "configured" : "missing", false],
+                ["temperature_threshold", current.fire?.temp_threshold ?? 40, true],
+                ["agent_config", current.agent ? "present" : "empty", false]
+            ]);
+        } catch (error) {
+            LabSafe.toast(error.message, "error");
+        }
+    }
+    async function saveSettings() {
+        const ai = {
+            model: document.getElementById("ai_model").value,
+            send_time: document.getElementById("analysis_time").value,
+            auto_analysis: document.getElementById("auto_analysis").checked
+        };
+        const apiKey = document.getElementById("api_key").value.trim();
+        if (apiKey) ai.api_key = apiKey;
+        const notifications = {
+            sound: document.getElementById("sound_alert").checked,
+            email: document.getElementById("email_alert").checked,
+            email_addr: document.getElementById("email").value,
+            email_sender: document.getElementById("email_sender").value
+        };
+        const emailPassword = document.getElementById("email_password").value.trim();
+        if (emailPassword) notifications.email_password = emailPassword;
+        const payload = {
+            cameras: {
+                "usb-camera": {url: document.getElementById("cam1_url").value, enabled: document.getElementById("cam1_enabled").checked},
+                "usb-camera-2": {url: document.getElementById("cam2_url").value, enabled: document.getElementById("cam2_enabled").checked}
+            },
+            fire: {
+                temp_threshold: parseInt(document.getElementById("temp_threshold").value || "40", 10),
+                sensitivity: document.getElementById("sensitivity").value,
+                interval: parseInt(document.getElementById("detect_interval").value || "2", 10)
+            },
+            ai,
+            notifications,
+            agent: current.agent || {}
+        };
+        try {
+            const data = await LabSafe.post("/api/settings/save", payload);
+            if (data.success === false) throw new Error(data.error || "保存失败");
+            LabSafe.toast("设置已保存");
+            loadSettings();
+        } catch (error) {
+            LabSafe.toast(error.message, "error");
+        }
+    }
+    document.getElementById("saveSettings").addEventListener("click", saveSettings);
+    loadSettings();
+})();
+</script>
+{% endblock %}

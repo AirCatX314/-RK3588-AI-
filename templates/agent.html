@@ -1,0 +1,79 @@
+{% set active_page = 'agent' %}
+{% extends 'base_console.html' %}
+{% block title %}智能助手 - LabSafe{% endblock %}
+
+{% block content %}
+<header class="page-header agent-page-header">
+    <div>
+        <h1 class="page-title">LabSafe Agent</h1>
+    </div>
+    <div class="control-row">
+        <button class="btn" id="agentPageRefresh">刷新状态</button>
+        <button class="btn btn-ghost" onclick="localStorage.removeItem('labsafe.agent.session_id'); location.reload();">新会话</button>
+    </div>
+</header>
+
+<section id="agentPage" class="agent-page-shell">
+    <div class="agent-chat-card">
+        <div class="agent-chat-header">
+            <div id="agentStatus" class="agent-status-line" data-agent-status></div>
+        </div>
+        <div id="agentActions" class="agent-actions-strip" data-agent-actions></div>
+    <div id="agentThread" class="agent-thread" data-agent-thread>
+        <article class="agent-message agent">
+            <div class="message-meta"><span>LabSafe Agent</span><span class="status-chip">就绪</span></div>
+            <div class="message-body">你好，我是 LabSafe Agent。你可以询问“现在实验室安全吗”、请求查看摄像头画面，或上传图片/文件进行分析。</div>
+        </article>
+    </div>
+    <section id="agentModelPanel" class="panel" data-agent-model-panel>
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">模型设置</h2>
+                <p class="panel-subtitle">只影响回答生成，不影响本地风险判定</p>
+            </div>
+        </div>
+        <div class="form-grid">
+            <select class="select" data-agent-provider></select>
+            <input class="field" data-agent-model-input placeholder="模型名">
+        </div>
+        <div class="control-row" style="margin-top:10px;">
+            <button class="btn" data-agent-apply-model>应用</button>
+            <button class="btn" data-agent-test-model>测试</button>
+            <span class="muted" data-agent-model-hint>API key 不在页面明文展示。</span>
+        </div>
+    </section>
+    <footer class="agent-composer">
+        <div class="upload-strip" data-agent-uploads></div>
+        <textarea class="textarea" data-agent-input placeholder="直接提问，或询问当前实验室状态。Ctrl/⌘ + Enter 发送。"></textarea>
+        <div class="composer-actions">
+            <input data-agent-file type="file" multiple hidden accept=".jpg,.jpeg,.png,.webp,.txt,.md,.json,.csv,.pdf,.docx">
+            <button class="btn" type="button" data-agent-attach>上传附件</button>
+            <button class="btn agent-mode-btn" type="button" data-agent-deep data-inactive-text="深度思考" data-active-text="深度思考已开">深度思考</button>
+            <button class="btn agent-mode-btn" type="button" data-agent-search data-inactive-text="联网搜索" data-active-text="联网搜索已开">联网搜索</button>
+            <button class="btn" type="button" data-agent-model-toggle>模型</button>
+            <span class="spacer"></span>
+            <button class="btn btn-primary" type="button" data-agent-send>发送</button>
+        </div>
+    </footer>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const consoleInstance = LabSafeAgentConsole.create({
+        root: "#agentPage",
+        sender: "web-agent",
+        sessionKey: "labsafe.agent.session_id",
+        status: "#agentStatus",
+        actions: "#agentActions",
+        pollMs: 5000
+    });
+    document.getElementById("agentPageRefresh").addEventListener("click", function () {
+        consoleInstance?.refreshStatus();
+        LabSafe.refreshShellStatus();
+    });
+});
+</script>
+{% endblock %}

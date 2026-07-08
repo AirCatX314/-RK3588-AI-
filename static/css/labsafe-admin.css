@@ -1,0 +1,309 @@
+:root {
+  color-scheme: light;
+  --admin-bg: #f4f4f2;
+  --admin-panel: #ffffff;
+  --admin-panel-soft: #fafafa;
+  --admin-border: #deded9;
+  --admin-border-strong: #cfcfca;
+  --admin-text: #18181b;
+  --admin-secondary: #52525b;
+  --admin-muted: #7a7a83;
+  --admin-hover: #efefec;
+  --admin-focus: rgba(24, 24, 27, 0.14);
+  --admin-danger: #dc2626;
+  --admin-warning: #b45309;
+  --admin-success: #15803d;
+  --admin-info: #0369a1;
+  --admin-radius: 8px;
+  --admin-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--admin-bg) !important;
+  color: var(--admin-text) !important;
+  font-family: var(--admin-sans);
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+a {
+  color: inherit;
+}
+
+.navbar {
+  min-height: 52px;
+  background: #fbfbfa !important;
+  border-bottom: 1px solid var(--admin-border);
+  box-shadow: none;
+}
+
+.navbar .container-fluid {
+  padding-inline: 18px;
+}
+
+.navbar-dark .navbar-brand,
+.navbar .navbar-brand,
+.navbar-dark .navbar-text,
+.navbar .navbar-text {
+  color: var(--admin-text) !important;
+}
+
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.container-fluid > .row {
+  min-height: calc(100vh - 53px);
+}
+
+.sidebar {
+  min-height: calc(100vh - 53px) !important;
+  background: #f7f7f5 !important;
+  border-right: 1px solid var(--admin-border);
+}
+
+.sidebar a {
+  display: flex !important;
+  align-items: center;
+  min-height: 38px;
+  margin: 3px 8px !important;
+  padding: 8px 12px !important;
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius) !important;
+  color: var(--admin-secondary) !important;
+  font-weight: 520;
+  text-decoration: none;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.sidebar a:hover {
+  background: var(--admin-hover) !important;
+  color: var(--admin-text) !important;
+}
+
+.sidebar a.active {
+  background: var(--admin-panel) !important;
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text) !important;
+  box-shadow: 0 1px 3px rgba(24, 24, 27, 0.05);
+}
+
+.sidebar hr {
+  border-color: var(--admin-border);
+  opacity: 1;
+  margin: 12px 16px;
+}
+
+main {
+  color: var(--admin-text);
+}
+
+main h2,
+main h5 {
+  color: var(--admin-text);
+  letter-spacing: 0;
+}
+
+main h2 {
+  font-size: 24px;
+  font-weight: 760;
+}
+
+main h5 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.card {
+  background: var(--admin-panel) !important;
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border) !important;
+  border-radius: var(--admin-radius) !important;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.04);
+  backdrop-filter: none !important;
+}
+
+.card-header {
+  background: var(--admin-panel-soft) !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+  color: var(--admin-text);
+  padding: 12px 16px;
+}
+
+.card-body {
+  color: var(--admin-text);
+}
+
+.text-muted,
+small.text-muted {
+  color: var(--admin-muted) !important;
+}
+
+.msg-item {
+  border-bottom-color: var(--admin-border) !important;
+  color: var(--admin-text) !important;
+}
+
+.msg-item:hover {
+  background: var(--admin-panel-soft) !important;
+}
+
+.msg-time {
+  color: var(--admin-muted) !important;
+}
+
+.form-label,
+.form-check-label {
+  color: var(--admin-secondary) !important;
+}
+
+.form-control,
+.form-select {
+  background: #ffffff !important;
+  border: 1px solid var(--admin-border-strong) !important;
+  border-radius: var(--admin-radius);
+  color: var(--admin-text) !important;
+  box-shadow: none !important;
+}
+
+.form-control::placeholder {
+  color: #a1a1aa;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #18181b !important;
+  box-shadow: 0 0 0 3px var(--admin-focus) !important;
+}
+
+.form-check-input {
+  border-color: var(--admin-border-strong);
+}
+
+.form-check-input:checked {
+  background-color: #18181b;
+  border-color: #18181b;
+}
+
+.btn {
+  border-radius: var(--admin-radius);
+  font-weight: 620;
+  box-shadow: none !important;
+}
+
+.btn-primary {
+  background: #18181b !important;
+  border-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+.btn-outline-light,
+.btn-outline-secondary {
+  background: #ffffff !important;
+  border-color: var(--admin-border-strong) !important;
+  color: var(--admin-text) !important;
+}
+
+.btn-outline-light:hover,
+.btn-outline-secondary:hover {
+  background: var(--admin-hover) !important;
+  color: var(--admin-text) !important;
+}
+
+.btn-danger {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: var(--admin-danger) !important;
+}
+
+.btn-warning {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: var(--admin-warning) !important;
+}
+
+.btn-info {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: var(--admin-info) !important;
+}
+
+.btn-success {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  color: var(--admin-success) !important;
+}
+
+.badge {
+  border-radius: 999px;
+  font-weight: 650;
+}
+
+.bg-success {
+  background: #dcfce7 !important;
+  color: var(--admin-success) !important;
+}
+
+.bg-secondary {
+  background: #e4e4e7 !important;
+  color: var(--admin-secondary) !important;
+}
+
+.connection-status {
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.06);
+}
+
+.status-connected {
+  background: var(--admin-success) !important;
+}
+
+.status-disconnected {
+  background: var(--admin-danger) !important;
+}
+
+.alert-normal {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  color: var(--admin-success) !important;
+}
+
+.alert-warning {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: var(--admin-warning) !important;
+}
+
+.alert-danger {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: var(--admin-danger) !important;
+}
+
+.camera-frame {
+  border: 1px solid #111111;
+  border-radius: var(--admin-radius) !important;
+  background: #0f0f10 !important;
+}
+
+.fire-alarm-banner {
+  border-radius: var(--admin-radius) !important;
+}
+
+body.fire-alarm .card,
+body.fire-alarm .camera-frame {
+  border-color: rgba(220, 38, 38, 0.7) !important;
+}
+
+.bi {
+  opacity: 0.78;
+}

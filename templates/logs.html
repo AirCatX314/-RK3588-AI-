@@ -1,0 +1,111 @@
+{% set active_page = 'logs' %}
+{% extends 'base_console.html' %}
+{% block title %}日志记录 - LabSafe{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <div class="page-kicker">日志记录</div>
+        <h1 class="page-title">日志记录</h1>
+        <p class="page-description">报警记录、Agent runs、系统消息和应急动作以等宽控制台方式展示。</p>
+    </div>
+    <div class="control-row">
+        <input class="field" id="logSearch" placeholder="搜索日志 / trace_id" style="width:260px;">
+        <button class="btn" id="refreshLogs">刷新</button>
+    </div>
+</header>
+
+<div class="tabs" id="logTabs" style="margin-bottom:12px;">
+    <button class="tab active" data-filter="all">全部</button>
+    <button class="tab" data-filter="fire">火灾</button>
+    <button class="tab" data-filter="camera">摄像头</button>
+    <button class="tab" data-filter="agent">Agent</button>
+    <button class="tab" data-filter="system">系统</button>
+    <button class="tab" data-filter="emergency">应急</button>
+</div>
+
+<section class="log-console" id="logConsole">
+    <div class="loading-state">正在加载日志...</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    let allLogs = [];
+    let currentFilter = "all";
+
+    function normalizeLogs(alerts, agent, messages) {
+        const list = [];
+        (Array.isArray(alerts) ? alerts : alerts.alerts || []).forEach((item) => list.push({...item, type:"fire", level:item.level || "warning"}));
+        (agent.recent_runs || []).forEach((run) => list.push({
+            type:"agent",
+            level: run.risk_level || "info",
+            created_at: run.created_at ? Number(run.created_at) * 1000 : Date.now(),
+            message: `${run.session_id || "agent"} ${run.reason || ""}`,
+            trace_id: run.trace_id
+        }));
+        (Array.isArray(messages) ? messages : messages.messages || []).forEach((msg) => list.push({...msg, type: msg.type || "system", level: msg.level || "info"}));
+        return list.sort((a, b) => new Date(b.created_at || b.timestamp || b.time || 0) - new Date(a.created_at || a.timestamp || a.time || 0));
+    }
+
+    function renderLogs() {
+        const query = document.getElementById("logSearch").value.toLowerCase();
+        const filtered = allLogs.filter((item) => {
+            const text = JSON.stringify(item).toLowerCase();
+            const matchFilter = currentFilter === "all" || String(item.type || "").toLowerCase().includes(currentFilter);
+            return matchFilter && (!query || text.includes(query));
+        });
+        document.getElementById("logConsole").innerHTML = filtered.length ? filtered.map((item) => {
+            const trace = item.trace_id ? ` trace_id=${item.trace_id}` : "";
+            return LabSafe.renderLogLine({...item, message:`${item.message || item.content || item.reason || item.title || ""}${trace}`});
+        }).join("") : '<div class="empty-state">没有匹配的日志</div>';
+        const warning = allLogs.filter((l) => ["warning", "danger"].includes(String(l.level || l.risk_level))).length;
+        LabSafe.renderKeyValue("logInspector", [
+            ["total", allLogs.length, true],
+            ["filtered", filtered.length, true],
+            ["warning_or_danger", warning, true],
+            ["filter", currentFilter, true]
+        ]);
+    }
+
+    async function loadLogs() {
+        try {
+            const [alerts, agent, messages] = await Promise.allSettled([
+                LabSafe.api("/api/alerts"),
+                LabSafe.api("/api/agent/status"),
+                LabSafe.api("/api/messages")
+            ]);
+            allLogs = normalizeLogs(
+                alerts.status === "fulfilled" ? alerts.value : [],
+                agent.status === "fulfilled" ? agent.value : {},
+                messages.status === "fulfilled" ? messages.value : []
+            );
+            renderLogs();
+        } catch (error) {
+            document.getElementById("logConsole").innerHTML = `<div class="error-state">${LabSafe.escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    document.getElementById("refreshLogs").addEventListener("click", loadLogs);
+    document.getElementById("logSearch").addEventListener("input", renderLogs);
+    document.getElementById("logTabs").addEventListener("click", (event) => {
+        const tab = event.target.closest(".tab");
+        if (!tab) return;
+        document.querySelectorAll("#logTabs .tab").forEach((node) => node.classList.remove("active"));
+        tab.classList.add("active");
+        currentFilter = tab.dataset.filter;
+        renderLogs();
+    });
+    document.getElementById("logConsole").addEventListener("click", async (event) => {
+        const text = event.target.textContent || "";
+        const match = text.match(/trace_id=([a-zA-Z0-9_-]+)/);
+        if (match) {
+            await navigator.clipboard?.writeText(match[1]);
+            LabSafe.toast("trace_id 已复制");
+        }
+    });
+    loadLogs();
+})();
+</script>
+{% endblock %}

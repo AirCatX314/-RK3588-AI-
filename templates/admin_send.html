@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发送通知 - 管理员后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
+    <style>
+.text-muted { color: #aaa !important; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .navbar { background: rgba(0,0,0,0.4) !important; }
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+        }
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: rgba(0,0,0,0.2);
+        }
+        .sidebar a {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            display: block;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 4px 8px;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.15);
+        }
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+    </style>
+    <link rel="stylesheet" href="/static/css/labsafe-admin.css">
+</head>
+<body style="color: #fff;">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/admin">
+                <i class="bi bi-shield-check"></i> 发送通知 - 管理员后台
+            </a>
+            <a href="/admin" class="btn btn-outline-light btn-sm">返回后台</a>
+        </div>
+    </nav>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar py-3">
+                <a href="/admin"><i class="bi bi-speedometer2 me-2"></i>总览</a>
+                <a href="/admin/cameras"><i class="bi bi-camera-video me-2"></i>视频监控</a>
+                <a href="/admin/messages"><i class="bi bi-chat-dots me-2"></i>消息管理</a>
+                <a href="/admin/send" class="active"><i class="bi bi-send me-2"></i>发送通知</a>
+            </nav>
+            
+            <main class="col-md-10 ms-sm-auto px-4 py-4">
+                <h2 class="mb-4"><i class="bi bi-send me-2"></i>发送通知</h2>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>快速发送</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-danger" onclick="sendAlert('火灾报警', '发生火灾，请立即处理！', 'danger')">
+                                        <i class="bi bi-fire me-2"></i>发送火灾报警
+                                    </button>
+                                    <button class="btn btn-warning" onclick="sendAlert('紧急求助', '收到紧急求助信号！', 'warning')">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>发送紧急求助
+                                    </button>
+                                    <button class="btn btn-info" onclick="sendAlert('系统维护', '系统将进行维护，请做好准备。', 'normal')">
+                                        <i class="bi bi-tools me-2"></i>发送维护通知
+                                    </button>
+                                    <button class="btn btn-success" onclick="sendAlert('安全提示', '请注意实验室安全规范。', 'normal')">
+                                        <i class="bi bi-info-circle me-2"></i>发送安全提示
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>自定义消息</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">消息类型</label>
+                                    <select class="form-select" id="msgType">
+                                        <option value="normal">普通消息</option>
+                                        <option value="warning">警告</option>
+                                        <option value="danger">危险</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">标题</label>
+                                    <input type="text" class="form-control" id="msgTitle" placeholder="输入标题">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">内容</label>
+                                    <textarea class="form-control" id="msgContent" rows="4" placeholder="输入消息内容"></textarea>
+                                </div>
+                                <button class="btn btn-primary w-100" onclick="sendCustom()">
+                                    <i class="bi bi-send me-2"></i>发送
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>发送历史</h5>
+                    </div>
+                    <div class="card-body" id="sendHistory">
+                        <div class="text-muted text-center">暂无发送记录</div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let ws = null;
+        
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.hostname}:8765`);
+            ws.onopen = function() {};
+            ws.onclose = function() { setTimeout(connect, 3000); };
+        }
+        connect();
+        
+        function saveMessage(sender, content) {
+            // 保存消息到历史记录
+            fetch('/api/messages/send', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({sender: sender, content: content})
+            });
+        }
+        
+        function sendMessage(msg) {
+            // 先保存到历史记录
+            saveMessage(msg.sender || 'admin', msg.content || '');
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(msg));
+                addToHistory(msg);
+                return true;
+            }
+            // 即使WebSocket失败，也保存成功
+            addToHistory(msg);
+            return true;
+        }
+        
+        function sendAlert(title, content, level) {
+            const msg = {
+                type: level === 'danger' ? 'alert' : 'normal',
+                level: level,
+                title: title,
+                content: content,
+                sender: 'admin',
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(msg);
+        }
+        
+        function sendCustom() {
+            const type = document.getElementById('msgType').value;
+            const title = document.getElementById('msgTitle').value || '通知';
+            const content = document.getElementById('msgContent').value;
+            
+            if (!content) {
+                alert('请输入内容');
+                return;
+            }
+            
+            const msg = {
+                type: type === 'danger' ? 'alert' : 'normal',
+                level: type,
+                title: title,
+                content: content,
+                sender: 'admin',
+                timestamp: new Date().toISOString()
+            };
+            
+            if (sendMessage(msg)) {
+                document.getElementById('msgTitle').value = '';
+                document.getElementById('msgContent').value = '';
+            }
+        }
+        
+        function addToHistory(msg) {
+            const history = document.getElementById('sendHistory');
+            if (history.querySelector('.text-muted')) history.innerHTML = '';
+            
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:10px;border-bottom:1px solid rgba(255,255,255,0.1)';
+            item.innerHTML = `<strong>${msg.title}</strong> - <span style="color:#fff">${msg.content}</span> <small style="color:#aaa">(${new Date().toLocaleTimeString()})</small>`;
+            history.insertBefore(item, history.firstChild);
+        }
+    </script>
+    {% include 'agent_widget.html' %}
+</body>
+</html>

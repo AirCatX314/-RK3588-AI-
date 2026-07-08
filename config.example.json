@@ -1,0 +1,89 @@
+﻿{
+  "cameras": {
+    "usb-camera": {
+      "name": "USB Camera",
+      "url": "/dev/video21",
+      "enabled": true,
+      "type": "usb"
+    },
+    "usb-camera-2": {
+      "name": "Secondary USB Camera",
+      "url": "/dev/video11",
+      "enabled": false,
+      "type": "usb"
+    }
+  },
+  "fire": {
+    "temp_threshold": 50,
+    "sensitivity": "medium",
+    "interval": 2
+  },
+  "ai": {
+    "model": "MiniMax",
+    "api_key": "",
+    "interval": 24,
+    "send_time": "08:00",
+    "auto_analysis": false
+  },
+  "notifications": {
+    "sound": true,
+    "email": false,
+    "email_addr": "",
+    "email_sender": "",
+    "email_password": ""
+  },
+  "emergency_call": {
+    "enabled": false,
+    "admin_phone": "",
+    "at_port": "/dev/ttyUSB1",
+    "auto_call": false,
+    "auto_call_cooldown_seconds": 180
+  },
+  "agent": {
+    "provider_order": [
+      "minimax",
+      "deepseek",
+      "local_openai_compatible"
+    ],
+    "providers": {
+      "minimax": {
+        "enabled": false,
+        "api_key": "",
+        "base_url": "https://api.minimaxi.com/v1",
+        "endpoint": "https://api.minimaxi.com/v1/chat/completions",
+        "model": "MiniMax-M3",
+        "supports_vision": true
+      },
+      "deepseek": {
+        "enabled": false,
+        "api_key": "",
+        "base_url": "https://api.deepseek.com",
+        "endpoint": "https://api.deepseek.com/chat/completions",
+        "model": "deepseek-chat",
+        "supports_vision": false
+      },
+      "local_openai_compatible": {
+        "enabled": false,
+        "api_key": "",
+        "base_url": "http://127.0.0.1:8000/v1",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "model": "local-model",
+        "supports_vision": false
+      }
+    },
+    "vision": {
+      "enabled": true,
+      "jpeg_quality": 82,
+      "max_image_bytes": 4000000,
+      "max_images": 3,
+      "max_side_px": 1280
+    },
+    "web_search": {
+      "provider_order": [
+        "bing_rss",
+        "bing",
+        "duckduckgo"
+      ]
+    }
+  }
+}

@@ -1,0 +1,162 @@
+{% set active_page = 'monitor' %}
+{% extends 'base_console.html' %}
+{% block title %}视频监控 - LabSafe{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <div class="page-kicker">视频监控</div>
+        <h1 class="page-title">视频监控</h1>
+        <p class="page-description">实时 MJPEG 监控与 RKNN 检测结果。摄像头流不使用高频截图替代。</p>
+    </div>
+    <div class="control-row">
+        <select class="select" id="streamMode" style="width:170px;">
+            <option value="stream">原始视频流</option>
+            <option value="stream/detect">后端带框流</option>
+        </select>
+        <button class="btn" id="snapshotBtn">打开截图</button>
+        <button class="btn btn-primary" id="agentAnalyzeBtn">让 Agent 分析画面</button>
+    </div>
+</header>
+
+<section class="camera-panel">
+    <div class="camera-header">
+        <div>
+            <strong id="cameraTitle">usb-camera</strong>
+            <div class="muted mono" id="cameraUrl">/api/camera/usb-camera/stream</div>
+        </div>
+        <div class="control-row">
+            <label class="status-chip"><input id="detectionToggle" type="checkbox" checked> 检测框</label>
+            <span class="status-chip" id="fireAlarmChip">火警 --</span>
+        </div>
+    </div>
+    <div class="camera-frame large">
+        <img id="monitorImage" src="/api/camera/usb-camera/stream" alt="实时摄像头画面">
+        <div class="detection-overlay" id="monitorOverlay"></div>
+    </div>
+</section>
+
+<div class="grid grid-2" style="margin-top:16px;">
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">检测结果</h2>
+                <p class="panel-subtitle">当前帧推理状态</p>
+            </div>
+            <span class="status-chip" id="detectionCount">0 个目标</span>
+        </div>
+        <div id="detectionTable" class="empty-state">等待检测结果...</div>
+    </section>
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">检测日志</h2>
+                <p class="panel-subtitle">帧号、延迟与告警变化</p>
+            </div>
+            <button class="btn btn-ghost" id="clearMonitorLog">清空</button>
+        </div>
+        <div class="log-console" id="monitorLog"></div>
+    </section>
+</div>
+{% endblock %}
+
+{% block inspector %}
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">摄像头状态</h2>
+            <p class="panel-subtitle">usb-camera</p>
+        </div>
+        <div class="js-risk-badge"></div>
+    </div>
+    <div id="cameraInspector"></div>
+</section>
+<section class="panel">
+    <h2 class="panel-title">告警原因</h2>
+    <p class="secondary" id="monitorAlarmReason">--</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const img = document.getElementById("monitorImage");
+    const overlay = document.getElementById("monitorOverlay");
+    const log = document.getElementById("monitorLog");
+    let lastFrame = null;
+    let detectionEnabled = true;
+
+    function addLog(level, message) {
+        const line = {time: new Date().toISOString(), level, message};
+        log.insertAdjacentHTML("afterbegin", LabSafe.renderLogLine(line));
+        while (log.children.length > 80) log.lastElementChild.remove();
+    }
+
+    async function updateDetections() {
+        try {
+            const data = await LabSafe.api("/api/camera/usb-camera/detections");
+            if (detectionEnabled) LabSafe.drawDetections(img, overlay, data);
+            const count = (data.detections || []).length;
+            document.getElementById("detectionCount").textContent = `${count} 个目标`;
+            document.getElementById("fireAlarmChip").className = `status-chip status-${data.fire_alarm ? "danger" : "normal"}`;
+            document.getElementById("fireAlarmChip").textContent = data.fire_alarm ? "火警触发" : "火警正常";
+            document.getElementById("monitorAlarmReason").textContent = data.alarm_reason || "未触发火灾/烟雾报警";
+            LabSafe.renderKeyValue("cameraInspector", [
+                ["帧号", data.frame_version ?? "--", true],
+                ["延迟", LabSafe.formatNumber(data.latency_ms, 1, "ms"), true],
+                ["画面宽度", data.image_width ?? "--", true],
+                ["画面高度", data.image_height ?? "--", true],
+                ["火警", data.fire_alarm ? "是" : "否", true],
+                ["时间", data.timestamp || "--", true]
+            ]);
+            document.getElementById("detectionTable").innerHTML = count ? `
+                <table class="table-like">
+                  <thead><tr><th>类别</th><th>置信度</th><th>坐标</th></tr></thead>
+                  <tbody>${data.detections.map((det) => `
+                    <tr>
+                      <td>${LabSafe.escapeHtml(det.class_name || "object")}</td>
+                      <td class="mono">${LabSafe.formatNumber((det.confidence || 0) * 100, 0, "%")}</td>
+                      <td class="mono">${LabSafe.escapeHtml((det.bbox || []).map((v) => Math.round(v)).join(", "))}</td>
+                    </tr>`).join("")}</tbody>
+                </table>` : '<div class="empty-state">当前帧未检测到目标</div>';
+            if (lastFrame !== data.frame_version) {
+                addLog(data.fire_alarm ? "danger" : "info", `frame=${data.frame_version} latency=${LabSafe.formatNumber(data.latency_ms, 1, "ms")} detections=${count}`);
+                lastFrame = data.frame_version;
+            }
+        } catch (error) {
+            addLog("warning", `detections unavailable: ${error.message}`);
+        }
+    }
+
+    document.getElementById("detectionToggle").addEventListener("change", (event) => {
+        detectionEnabled = event.target.checked;
+        overlay.innerHTML = "";
+    });
+    document.getElementById("streamMode").addEventListener("change", (event) => {
+        const path = `/api/camera/usb-camera/${event.target.value}`;
+        img.src = `${path}?t=${Date.now()}`;
+        document.getElementById("cameraUrl").textContent = path;
+    });
+    document.getElementById("snapshotBtn").addEventListener("click", () => {
+        window.open("/api/camera/usb-camera/snapshot/detect", "_blank");
+    });
+    document.getElementById("agentAnalyzeBtn").addEventListener("click", async () => {
+        try {
+            window.LabSafeAgent?.open?.();
+            const data = await LabSafe.post("/api/agent/chat", {
+                message: "请查看当前实验室摄像头画面，结合传感器和检测结果判断是否安全。",
+                sender: "web",
+                session_id: "monitor:analyze"
+            }, {timeoutMs:70000});
+            LabSafe.toast(data.reply ? "Agent 已完成画面分析" : "Agent 请求已返回");
+        } catch (error) {
+            LabSafe.toast(error.message, "error");
+        }
+    });
+    document.getElementById("clearMonitorLog").addEventListener("click", () => log.innerHTML = "");
+    updateDetections();
+    window.setInterval(updateDetections, 800);
+    window.addEventListener("resize", updateDetections);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - LabSafe</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.css">
+    <style>
+.text-muted { color: #aaa !important; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .navbar { background: rgba(0,0,0,0.4) !important; }
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+        }
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: rgba(0,0,0,0.2);
+        }
+        .sidebar a {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            display: block;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 4px 8px;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.15);
+        }
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+        .form-label { color: rgba(255,255,255,0.8); }
+    </style>
+    <link rel="stylesheet" href="/static/css/labsafe-admin.css">
+</head>
+<body style="color: #fff;">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-shield-check"></i> LabSafe
+            </a>
+            <a href="/admin" class="btn btn-outline-light btn-sm">返回后台</a>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <h2 class="mb-4"><i class="bi bi-gear me-2"></i>系统设置</h2>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-camera-video me-2"></i>摄像头配置</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">客厅摄像头 RTSP地址</label>
+                            <input type="text" class="form-control" id="cam1_url" 
+                                   value="rtsp://example.local:554/stream1" 
+                                   placeholder="rtsp://IP:端口/路径">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="cam1_enabled" checked>
+                            <label class="form-check-label">启用客厅摄像头</label>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">门口摄像头 RTSP地址</label>
+                            <input type="text" class="form-control" id="cam2_url" 
+                                   value="http://example.local:8080/video" 
+                                   placeholder="rtsp://IP:端口/路径 或 http://IP:端口/">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="cam2_enabled">
+                            <label class="form-check-label">启用门口摄像头</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-fire me-2"></i>火灾检测设置</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">温度阈值 (°C)</label>
+                            <input type="number" class="form-control" id="temp_threshold" value="60">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">检测灵敏度</label>
+                            <select class="form-select" id="sensitivity">
+                                <option value="high">高</option>
+                                <option value="medium" selected>中</option>
+                                <option value="low">低</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">检测间隔 (秒)</label>
+                            <input type="number" class="form-control" id="detect_interval" value="2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-robot me-2"></i>AI分析设置</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">AI模型</label>
+                            <select class="form-select" id="ai_model">
+                                <option value="MiniMax">MiniMax</option>
+                                <option value="OpenAI">OpenAI GPT</option>
+                                <option value="local">本地模型</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">API Key</label>
+                            <input type="password" class="form-control" id="api_key" placeholder="输入API密钥">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">定时发送时间</label>
+                            <input type="time" class="form-control" id="analysis_time" value="09:00">
+                            <small class="text-muted">每天固定时间发送报告</small>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="auto_analysis" onchange="toggleSchedule()">
+                            <label class="form-check-label">启用定时自动分析并发送邮件报告</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bell me-2"></i>通知设置</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="sound_alert" checked>
+                            <label class="form-check-label">启用声音报警</label>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="email_alert">
+                            <label class="form-check-label">启用邮件通知</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>邮箱设置</h5>
+                    </div>
+                    <div class="card-body" id="email_field">
+                        <div class="mb-3">
+                            <label class="form-label">发送邮箱 (QQ邮箱)</label>
+                            <input type="email" class="form-control" id="email_sender" placeholder="your@qq.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">SMTP授权码</label>
+                            <input type="password" class="form-control" id="email_password" placeholder="输入SMTP授权码">
+                            <small class="text-muted">需要在邮箱设置中开启SMTP并获取授权码</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">接收邮箱</label>
+                            <input type="email" class="form-control" id="email" placeholder="接收报告的邮箱">
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary w-100" onclick="saveSettings()">
+                    <i class="bi bi-check-lg me-2"></i>保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 加载设置
+        fetch('/api/settings')
+            .then(r => r.json())
+            .then(data => {
+                if (data.cameras) {
+                    document.getElementById('cam1_url').value = data.cameras['living-room']?.url || '';
+                    document.getElementById('cam1_enabled').checked = data.cameras['living-room']?.enabled;
+                    document.getElementById('cam2_url').value = data.cameras['front-door']?.url || '';
+                    document.getElementById('cam2_enabled').checked = data.cameras['front-door']?.enabled;
+                }
+                if (data.fire) {
+                    document.getElementById('temp_threshold').value = data.fire.temp_threshold || 60;
+                    document.getElementById('sensitivity').value = data.fire.sensitivity || 'medium';
+                    document.getElementById('detect_interval').value = data.fire.interval || 2;
+                }
+                if (data.ai) {
+                    document.getElementById('ai_model').value = data.ai.model || 'MiniMax';
+                    document.getElementById('api_key').value = data.ai.api_key || '';
+                    document.getElementById('analysis_time').value = data.ai.send_time || '09:00';
+                    document.getElementById('auto_analysis').checked = data.ai.auto_analysis || false;
+                }
+                if (data.notifications) {
+                    document.getElementById('sound_alert').checked = data.notifications.sound !== false;
+                    document.getElementById('email_alert').checked = data.notifications.email || false;
+                    if (data.notifications.email) {
+                        document.getElementById('email_field').style.display = 'block';
+                    }
+                    document.getElementById('email').value = data.notifications.email_addr || '';
+                    document.getElementById('email_sender').value = data.notifications.email_sender || '';
+                    document.getElementById('email_password').value = data.notifications.email_password || '';
+                }
+            });
+        
+        // 邮箱通知开关
+        document.getElementById('email_alert').addEventListener('change', function() {
+            document.getElementById('email_field').style.display = this.checked ? 'block' : 'none';
+        });
+        
+        function toggleSchedule() {
+            const enabled = document.getElementById('auto_analysis').checked;
+            if (enabled) {
+                const email = document.getElementById('email').value;
+                if (!email) {
+                    alert('请先设置接收邮箱');
+                    document.getElementById('auto_analysis').checked = false;
+                }
+            }
+        }
+        
+        // 保存设置
+        function saveSettings() {
+            const settings = {
+                cameras: {
+                    'living-room': {
+                        url: document.getElementById('cam1_url').value,
+                        enabled: document.getElementById('cam1_enabled').checked
+                    },
+                    'front-door': {
+                        url: document.getElementById('cam2_url').value,
+                        enabled: document.getElementById('cam2_enabled').checked
+                    }
+                },
+                fire: {
+                    temp_threshold: parseInt(document.getElementById('temp_threshold').value),
+                    sensitivity: document.getElementById('sensitivity').value,
+                    interval: parseInt(document.getElementById('detect_interval').value)
+                },
+                ai: {
+                    model: document.getElementById('ai_model').value,
+                    api_key: document.getElementById('api_key').value,
+                    interval: parseInt(document.getElementById('analysis_interval')?.value || 24),
+                    send_time: document.getElementById('analysis_time').value,
+                    auto_analysis: document.getElementById('auto_analysis').checked
+                },
+                notifications: {
+                    sound: document.getElementById('sound_alert').checked,
+                    email: document.getElementById('email_alert').checked,
+                    email_addr: document.getElementById('email').value,
+                    email_sender: document.getElementById('email_sender').value,
+                    email_password: document.getElementById('email_password').value
+                }
+            };
+            
+            fetch('/api/settings/save', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(settings)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('设置已保存！需要重启服务生效。');
+                } else {
+                    alert('保存失败: ' + data.error);
+                }
+            })
+            .catch(e => alert('保存失败'));
+        }
+    </script>
+    {% include 'agent_widget.html' %}
+</body>
+</html>

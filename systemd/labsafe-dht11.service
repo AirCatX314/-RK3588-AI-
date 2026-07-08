@@ -1,0 +1,12 @@
+[Unit]
+Description=LabSafe DHT11 Sensor Reader
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/elf/labsafe/sensors/dht11_service.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

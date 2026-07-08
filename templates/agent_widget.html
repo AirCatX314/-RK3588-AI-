@@ -1,0 +1,78 @@
+<button id="lsAgentLaunch" class="agent-launch" type="button" aria-label="打开 LabSafe Agent">AI</button>
+<section id="lsAgentDrawer" class="agent-drawer" aria-label="LabSafe Agent 小窗">
+    <header class="agent-drawer-header">
+        <div>
+            <strong>LabSafe Agent</strong>
+            <div class="muted" style="font-size:12px;">状态、画面与应急动作辅助判断</div>
+        </div>
+        <div class="control-row">
+            <button class="btn btn-ghost" id="lsAgentRefresh" type="button">刷新</button>
+            <button class="btn btn-ghost" id="lsAgentClose" type="button" aria-label="关闭">x</button>
+        </div>
+    </header>
+    <div id="lsAgentStatus" class="panel" style="border-width:0 0 1px;border-radius:0;padding:10px 14px;"></div>
+    <div id="lsAgentMessages" class="agent-thread" data-agent-thread>
+        <article class="agent-message agent">
+            <div class="message-meta"><span>LabSafe Agent</span></div>
+            <div class="message-body">可以询问当前实验室状态、摄像头画面、报警原因，或上传图片/文件分析。</div>
+        </article>
+    </div>
+    <div id="lsAgentActions" data-agent-actions></div>
+    <div id="lsAgentModelPanel" class="panel" data-agent-model-panel style="border-radius:0;border-left:0;border-right:0;">
+        <div class="form-grid">
+            <select class="select" data-agent-provider></select>
+            <input class="field" data-agent-model-input placeholder="模型名">
+        </div>
+        <div class="control-row" style="margin-top:8px;">
+            <button class="btn" data-agent-apply-model type="button">应用</button>
+            <button class="btn" data-agent-test-model type="button">测试</button>
+            <span class="muted" data-agent-model-hint>API key 不在页面明文展示。</span>
+        </div>
+    </div>
+    <footer class="agent-composer" style="border-radius:0;border-left:0;border-right:0;border-bottom:0;">
+        <div class="upload-strip" data-agent-uploads></div>
+        <textarea class="textarea" data-agent-input placeholder="直接提问，或询问当前实验室状态"></textarea>
+        <div class="composer-actions">
+            <input data-agent-file type="file" multiple hidden accept=".jpg,.jpeg,.png,.webp,.txt,.md,.json,.csv,.pdf,.docx">
+            <button class="btn" data-agent-attach type="button">上传</button>
+            <button class="btn agent-mode-btn" data-agent-deep data-inactive-text="深度思考" data-active-text="深度思考已开" type="button">深度思考</button>
+            <button class="btn agent-mode-btn" data-agent-search data-inactive-text="联网搜索" data-active-text="联网搜索已开" type="button">联网搜索</button>
+            <button class="btn" data-agent-model-toggle type="button">模型</button>
+            <span class="spacer"></span>
+            <button class="btn btn-primary" data-agent-send type="button">发送</button>
+        </div>
+    </footer>
+</section>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const launch = document.getElementById("lsAgentLaunch");
+    const drawer = document.getElementById("lsAgentDrawer");
+    const close = document.getElementById("lsAgentClose");
+    const refresh = document.getElementById("lsAgentRefresh");
+    let instance = null;
+    function ensure() {
+        if (!instance && window.LabSafeAgentConsole) {
+            instance = window.LabSafeAgentConsole.create({
+                root: "#lsAgentDrawer",
+                sender: "web-widget",
+                sessionKey: "labsafe.agent.widget.session_id",
+                status: "#lsAgentStatus",
+                actions: "#lsAgentActions",
+                pollMs: 8000
+            });
+        }
+        return instance;
+    }
+    function openAgent() {
+        drawer.classList.add("open");
+        ensure()?.refreshStatus();
+    }
+    function closeAgent() {
+        drawer.classList.remove("open");
+    }
+    launch?.addEventListener("click", openAgent);
+    close?.addEventListener("click", closeAgent);
+    refresh?.addEventListener("click", function () { ensure()?.refreshStatus(); });
+    window.LabSafeAgent = { open: openAgent, close: closeAgent, refresh: function () { ensure()?.refreshStatus(); } };
+});
+</script>
