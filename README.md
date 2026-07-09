@@ -1,14 +1,30 @@
-# LabSafe
+# 基于RK3588的AI实验室安全智能化监测与应急响应处置系统基于RK3588的AI实验室安全智能化监测与应急响应处置系统
 
-LabSafe is a laboratory safety monitoring system for RK3588-based boards. It
-includes a Flask backend, Qt client, camera/fire detection integration, sensor
-reading, notification hooks, and emergency-call control.
+本项目是一套2026年嵌赛瑞芯微赛题中基于elf2 RK3588 开发板的的AI实验室安全智能化监测与应急响应处置系统基于RK3588的AI实验室安全智能化监测与应急响应处置系统，集成了视频监控、火灾/烟雾识别、温湿度传感器读取、Web 管理后台、Qt 客户端、邮件通知、WebSocket 消息推送和应急通信控制等功能。
 
-This repository is an open-source sanitized export. See
-`README_OPEN_SOURCE.md` before running or publishing changes.
+## 功能特点
 
-## Configuration
+- 实时摄像头画面采集与显示
+- 基于模型的火灾、烟雾等安全风险检测
+- DHT11 温湿度传感器读取
+- Web 后台管理界面
+- Qt 本地监控客户端
+- 实验室消息通知与报警推送
+- 邮件报警通知
+- 4G 模块应急拨号控制
+- Agent 智能问答与安全状态分析
+- 支持 RK3588 NPU / RKNN 模型部署
 
-Copy `config.example.json` to `config.json` and fill local credentials and
-device settings. Do not commit `config.json`.
+## 项目结构
+
+```text
+app/             Flask 后端、检测接口、Agent、应急通信模块
+qt_system/       Qt 客户端和消息服务
+templates/       Web 前端页面模板
+static/          前端静态资源
+sensors/         DHT11 传感器读取服务
+systemd/         systemd 服务文件
+tools/           辅助工具脚本
+models/          模型说明目录，模型文件不随仓库发布
+config.example.json  示例配置文件
 
